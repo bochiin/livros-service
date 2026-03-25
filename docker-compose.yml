@@ -8,6 +8,17 @@ services:
       POSTGRES_DB: books-service
     ports:
       - "5432:5432"
+  db-keycloak:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres@local
+      POSTGRES_DB: keycloak
+    ports:
+      - "5434:5432"
+    networks:
+      - keycloak-network
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: jaeger-service
@@ -22,20 +33,29 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: keycloak
-    command: start-dev
+    command: start-dev --http-port=8080
     restart: always
     environment:
       KC_DB: postgres
-      KC_DB_URL_HOST: db
+      KC_DB_URL_HOST: db-keycloak
       KC_DB_URL_PORT: 5432
       KC_DB_URL_DATABASE: keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres@local
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: "true"
     ports:
-      - "9009:8080"
+      - "8081:8080"
+      - "7443:7443"
     depends_on:
       - db
+    networks:
+      - keycloak-network
 volumes:
   postgres_data:
+
+networks:
+    keycloak-network:
+        driver: bridge
